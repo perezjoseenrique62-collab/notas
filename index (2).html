@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mis notas</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1a1d21;--mut:#6b7280;--ac:#2563eb;--bd:#e5e7eb;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#111317;--card:#1b1e24;--tx:#e8eaed;--mut:#9aa0a6;--ac:#6ea0ff;--bd:#2c3038}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px system-ui,sans-serif;padding:16px;max-width:720px;margin:auto}
+h1{font-size:22px}h2{font-size:17px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+input,select,button{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);width:100%;margin-bottom:8px}
+button{background:var(--ac);color:#fff;border:0;cursor:pointer}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.w{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{padding:8px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mut);font-weight:600;font-size:14px}
+.x{background:none;color:#dc2626;width:auto;margin:0;padding:2px 8px}
+.ap{color:#16a34a}.su{color:#dc2626}
+</style></head><body>
+<h1>📚 Mis notas</h1>
+<div class="card"><h2>Añadir nota</h2>
+<input id="a" list="as" placeholder="Asignatura">
+<datalist id="as"></datalist>
+<input id="e" placeholder="Nombre del examen">
+<div class="row">
+<input id="n" type="number" step="0.01" min="0" max="10" placeholder="Nota (0-10)" inputmode="decimal">
+<select id="t"><option value="1">1.º trimestre</option><option value="2">2.º trimestre</option><option value="3">3.º trimestre</option></select>
+</div>
+<button onclick="add()">Guardar</button></div>
+<div class="card"><h2>Medias por trimestre</h2><div class="w" id="m"></div></div>
+<div class="card"><h2>Exámenes</h2><div class="w" id="l"></div></div>
+<script>
+let d=[];
+try{d=JSON.parse(localStorage.getItem("notas")||"[]")}catch(e){}
+const $=id=>document.getElementById(id);
+const save=()=>{try{localStorage.setItem("notas",JSON.stringify(d))}catch(e){}};
+const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
+const f=v=>v==null?"–":`<span class="${v>=5?'ap':'su'}">${v.toFixed(2)}</span>`;
+function add(){
+ const a=$("a").value.trim(),e=$("e").value.trim(),n=parseFloat($("n").value);
+ if(!a||!e||isNaN(n)||n<0||n>10)return alert("Revisa los datos (nota 0-10)");
+ d.push({a,e,n,t:+$("t").value});save();$("e").value="";$("n").value="";render();
+}
+function del(i){d.splice(i,1);save();render()}
+function render(){
+ const subs=[...new Set(d.map(x=>x.a))].sort();
+ $("as").innerHTML=subs.map(s=>`<option value="${s}">`).join("");
+ let h="<table><tr><th>Asignatura</th><th>1T</th><th>2T</th><th>3T</th></tr>";
+ const med=(s,t)=>avg(d.filter(x=>(!s||x.a===s)&&x.t===t).map(x=>x.n));
+ subs.forEach(s=>h+=`<tr><td>${s}</td>${[1,2,3].map(t=>`<td>${f(med(s,t))}</td>`).join("")}</tr>`);
+ h+=`<tr><th>Media total</th>${[1,2,3].map(t=>`<th>${f(med(null,t))}</th>`).join("")}</tr></table>`;
+ $("m").innerHTML=d.length?h:"Sin notas todavía";
+ let l="<table><tr><th>Asig.</th><th>Examen</th><th>Nota</th><th>T</th><th></th></tr>";
+ d.map((x,i)=>[x,i]).sort((p,q)=>p[0].t-q[0].t||p[0].a.localeCompare(q[0].a)).forEach(([x,i])=>
+  l+=`<tr><td>${x.a}</td><td>${x.e}</td><td>${f(x.n)}</td><td>${x.t}</td><td><button class="x" onclick="del(${i})">✕</button></td></tr>`);
+ $("l").innerHTML=d.length?l+"</table>":"Sin exámenes";
+}
+render();
+</script></body></html>
